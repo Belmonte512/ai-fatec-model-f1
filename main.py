@@ -1,7 +1,10 @@
+import os
+
 import pandas as pd
+import sns
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, TargetEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
@@ -9,6 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, roc_auc_score, confusion_matrix)
+
 import joblib
 from sklearn.neural_network import MLPClassifier
 from datetime import datetime
@@ -25,11 +29,14 @@ df = df.merge(races, on='raceId', how='left')
 df['finished'] = (df['statusId'] == 1).astype(int)
 
 # ------------- 3. features (ajustadas ao SEU dataset) -------------
-numerical_features = ['grid', 'laps', 'points', 'positionOrder']
+numerical_features = ['grid']
 categorical_features = ['constructorId', 'driverId', 'circuitId']
+
 df['constructorId'] = df['constructorId'].astype(str)
 df['driverId'] = df['driverId'].astype(str)
 df['circuitId'] = df['circuitId'].astype(str)
+
+df['finished'].value_counts(normalize=True)
 
 
 X = df[numerical_features + categorical_features].copy()
@@ -47,7 +54,7 @@ num_pipeline = Pipeline([
 
 cat_pipeline = Pipeline([
     ('impute', SimpleImputer(strategy='constant', fill_value='missing')),
-    ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ('target', TargetEncoder())
 ])
 
 preprocessor = ColumnTransformer(
@@ -126,9 +133,41 @@ models = {
 # ------------- 9. avaliar no test set -------------
 results = {}
 
+print("\n\n================ VALIDAÇÃO TREINAMENTO vs TESTE ================")
+
 for name, model in models.items():
+
+    # --- Previsão no treino ---
+    y_train_pred = model.predict(X_train)
+    y_train_proba = model.predict_proba(X_train)[:, 1]
+
+    train_f1 = f1_score(y_train, y_train_pred)
+    train_acc = accuracy_score(y_train, y_train_pred)
+
+    # --- Previsão no teste ---
     y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:,1]
+    y_proba = model.predict_proba(X_test)[:, 1]
+
+    test_f1 = f1_score(y_test, y_pred)
+    test_acc = accuracy_score(y_test, y_pred)
+
+    # --- GAP ---
+    f1_gap = train_f1 - test_f1
+    acc_gap = train_acc - test_acc
+
+    print(f"\n### Modelo: {name}")
+    print(f"Treino - F1: {train_f1:.4f}, Accuracy: {train_acc:.4f}")
+    print(f"Teste  - F1: {test_f1:.4f}, Accuracy: {test_acc:.4f}")
+    print(f"Gap F1: {f1_gap:.4f}   |   Gap ACC: {acc_gap:.4f}")
+
+    # Diagnóstico automático
+    if f1_gap < 0.05:
+        print("Diagnóstico: 👍 Generalização excelente, sem overfitting.")
+    elif f1_gap < 0.15:
+        print("Diagnóstico: ⚠️ Um pouco de overfitting, aceitável.")
+    else:
+        print("Diagnóstico: ❌ Overfitting forte — modelo está decorando o treino.")
+
 
     acc = accuracy_score(y_test, y_pred)
     prec = precision_score(y_test, y_pred, zero_division=0)
@@ -154,8 +193,10 @@ for name, model in models.items():
 best_name = max(results, key=lambda x: results[x]['f1'])
 best_model = models[best_name]
 
-joblib.dump(best_model, f"best_model_{best_name}.joblib")
-print("\nMelhor modelo salvo:", best_name)
+os.makedirs("models", exist_ok=True)
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+model_filename = f"models/best_model_{best_name}_{timestamp}.joblib"
+joblib.dump(best_model, model_filename)
 
 print("\n\n================ INTERPRETAÇÃO DETALHADA POR MODELO ================\n")
 
@@ -221,7 +262,12 @@ results_df[['accuracy','precision','recall','f1','roc_auc']] = \
     results_df[['accuracy','precision','recall','f1','roc_auc']].round(4)
 
 # salvar CSV com timestamp automático
-filename = f"resultados_modelos_{timestamp}.csv"
+os.makedirs("results", exist_ok=True)
+
+# montar o caminho completo
+filename = f"results/resultados_modelos_{timestamp}.csv"
+
+# salvar o CSV
 results_df.to_csv(filename, index=False)
 
 print(f"\nResultados salvos em: {filename}")
