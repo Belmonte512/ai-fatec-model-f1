@@ -1,7 +1,8 @@
+# ...existing code...
 import os
 
 import pandas as pd
-import sns
+import seaborn as sns  # corrigido: 'seaborn' (alias sns)
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, TargetEncoder
