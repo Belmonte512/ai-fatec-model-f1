@@ -49,12 +49,14 @@ X_train, X_test, y_train, y_test = train_test_split(
 num_pipeline = Pipeline([
     ('impute', SimpleImputer(strategy='median')),
     ('scaler', StandardScaler()),
-])
+    ]
+)
 
 cat_pipeline = Pipeline([
     ('impute', SimpleImputer(strategy='constant', fill_value='missing')),
     ('target', TargetEncoder())
-])
+    ]
+)
 
 preprocessor = ColumnTransformer(
     transformers=[
