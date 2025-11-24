@@ -1,0 +1,4 @@
+model,accuracy,precision,recall,f1,roc_auc,true_positive,false_negative,true_negative,false_positive
+LogisticRegression,0.7364,0.7463,0.7547,0.7505,0.8058,400,130,343,136
+RandomForest,0.7453,0.761,0.7509,0.7559,0.8139,398,132,354,125
+KNN,0.7304,0.7425,0.7453,0.7439,0.7902,395,135,342,137

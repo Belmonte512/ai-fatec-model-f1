@@ -1,6 +1,4 @@
-# ...existing code...
 import os
-
 import pandas as pd
 import seaborn as sns  # corrigido: 'seaborn' (alias sns)
 from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
@@ -65,16 +63,16 @@ preprocessor = ColumnTransformer(
     ]
 )
 
-pipe_mlp = Pipeline([
-    ('pre', preprocessor),
-    ('clf', MLPClassifier(max_iter=300, random_state=42))
-])
+#pipe_mlp = Pipeline([
+#    ('pre', preprocessor),
+#    ('clf', MLPClassifier(max_iter=300, random_state=42))
+#])
 
-grid_mlp = {
-    'clf__hidden_layer_sizes': [(32,), (64,), (64,32)],
-    'clf__activation': ['relu', 'tanh'],
-    'clf__learning_rate_init': [0.001, 0.01]
-}
+#grid_mlp = {
+#    'clf__hidden_layer_sizes': [(32,), (64,), (64,32)],
+#    'clf__activation': ['relu', 'tanh'],
+#    'clf__learning_rate_init': [0.001, 0.01]
+#}
 
 # ------------- 5. Modelos + GridSearch -------------
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
