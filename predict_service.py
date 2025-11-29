@@ -1,5 +1,4 @@
 # predict_service.py
-
 import joblib
 import pandas as pd
 
